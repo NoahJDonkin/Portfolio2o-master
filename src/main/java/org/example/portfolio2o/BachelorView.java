@@ -77,61 +77,103 @@ public class BachelorView {
     }
 
     private void initializeHandlers() {
+        // Program Selection
         selectProgramButton.setOnAction(e -> {
             String selectedProgram = programComboBox.getValue();
-            if (selectedProgram != null) {
-                programListView.getItems().clear(); // Clear any existing selections
+            if (selectedProgram != null && !programListView.getItems().contains(selectedProgram)) {
                 programListView.getItems().add(selectedProgram);
-                ectsLabelProgram.setText("ECTS: " + database.getECTSForItem(selectedProgram, "Program"));
 
-                // Filter courses and projects based on selected program
+                // Update ECTS
+                int ectsForProgram = database.getECTSForItem(selectedProgram, "Program");
+                int currentTotalECTS = Integer.parseInt(ectsLabelProgram.getText().replace("ECTS: ", ""));
+                currentTotalECTS += ectsForProgram;
+                ectsLabelProgram.setText("ECTS: " + currentTotalECTS);
+
+                // Update related combo boxes (Courses and Projects)
                 filterCoursesAndProjects(selectedProgram);
             }
         });
 
+        // Course Selection
         selectCourseButton.setOnAction(e -> {
-            String selectedItem = courseComboBox.getValue();
-            if (selectedItem != null) {
-                courseListView.getItems().add(selectedItem);
-                ectsLabelCourse.setText("ECTS: " + database.getECTSForItem(selectedItem, "Course"));
+            String selectedCourse = courseComboBox.getValue();
+            if (selectedCourse != null && !courseListView.getItems().contains(selectedCourse)) {
+                courseListView.getItems().add(selectedCourse);
+
+                // Update ECTS
+                int ectsForCourse = database.getECTSForItem(selectedCourse, "Course");
+                int currentTotalECTS = Integer.parseInt(ectsLabelCourse.getText().replace("ECTS: ", ""));
+                currentTotalECTS += ectsForCourse;
+                ectsLabelCourse.setText("ECTS: " + currentTotalECTS);
             }
         });
 
+        // Project Selection
         selectProjectButton.setOnAction(e -> {
-            String selectedItem = projectComboBox.getValue();
-            if (selectedItem != null) {
-                projectListView.getItems().add(selectedItem);
-                ectsLabelProject.setText("ECTS: " + database.getECTSForItem(selectedItem, "Project"));
+            String selectedProject = projectComboBox.getValue();
+            if (selectedProject != null && !projectListView.getItems().contains(selectedProject)) {
+                projectListView.getItems().add(selectedProject);
+
+                // Update ECTS
+                int ectsForProject = database.getECTSForItem(selectedProject, "Project");
+                int currentTotalECTS = Integer.parseInt(ectsLabelProject.getText().replace("ECTS: ", ""));
+                currentTotalECTS += ectsForProject;
+                ectsLabelProject.setText("ECTS: " + currentTotalECTS);
             }
         });
 
+        // Elective Selection
         selectElectiveButton.setOnAction(e -> {
-            String selectedItem = electiveComboBox.getValue();
-            if (selectedItem != null) {
-                electiveListView.getItems().add(selectedItem);
-                ectsLabelElective.setText("ECTS: " + database.getECTSForItem(selectedItem, "Elective"));
+            String selectedElective = electiveComboBox.getValue();
+            if (selectedElective != null && !electiveListView.getItems().contains(selectedElective)) {
+                electiveListView.getItems().add(selectedElective);
+
+                // Update ECTS
+                int ectsForElective = database.getECTSForItem(selectedElective, "Elective");
+                int currentTotalECTS = Integer.parseInt(ectsLabelElective.getText().replace("ECTS: ", ""));
+                currentTotalECTS += ectsForElective;
+                ectsLabelElective.setText("ECTS: " + currentTotalECTS);
             }
         });
+
+        // Deselect Handlers
+        programListView.setOnMouseClicked(e -> removeItem(programListView, ectsLabelProgram, "Program"));
+        courseListView.setOnMouseClicked(e -> removeItem(courseListView, ectsLabelCourse, "Course"));
+        projectListView.setOnMouseClicked(e -> removeItem(projectListView, ectsLabelProject, "Project"));
+        electiveListView.setOnMouseClicked(e -> removeItem(electiveListView, ectsLabelElective, "Elective"));
+    }
+
+    private void removeItem(ListView<String> listView, Label ectsLabel, String category) {
+        String selectedItem = listView.getSelectionModel().getSelectedItem();
+        if (selectedItem != null) {
+            listView.getItems().remove(selectedItem);
+
+            // Deduct the ECTS of the removed item
+            int ectsForItem = database.getECTSForItem(selectedItem, category);
+            int currentTotalECTS = Integer.parseInt(ectsLabel.getText().replace("ECTS: ", ""));
+            currentTotalECTS -= ectsForItem;
+            ectsLabel.setText("ECTS: " + currentTotalECTS);
+        }
     }
 
     private void filterCoursesAndProjects(String programName) {
-        // Filter courses
+        // Fetch courses and projects based on the selected program
         List<String> filteredCourses = database.fetchCoursesForProgram(programName);
-        courseComboBox.getItems().clear();
-        courseComboBox.getItems().addAll(filteredCourses);
-
-        // Filter projects
         List<String> filteredProjects = database.fetchProjectsForProgram(programName);
-        projectComboBox.getItems().clear();
-        projectComboBox.getItems().addAll(filteredProjects);
+
+        // Populate course and project combo boxes
+        courseComboBox.getItems().setAll(filteredCourses);
+        projectComboBox.getItems().setAll(filteredProjects);
     }
 
     private void populateComboBoxes() {
+        // Populate programs and electives combo boxes
         programComboBox.getItems().addAll(database.fetchPrograms());
-        // Initial population is empty; will be filled on program selection
+        electiveComboBox.getItems().addAll(database.fetchElectives());
+
+        // Clear course and project combo boxes initially
         courseComboBox.getItems().clear();
         projectComboBox.getItems().clear();
-        electiveComboBox.getItems().addAll(database.fetchElectives());
     }
 
     public GridPane getGridPane() {
